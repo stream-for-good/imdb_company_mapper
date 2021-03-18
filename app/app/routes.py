@@ -15,6 +15,37 @@ def get_api_root():
     return os.getenv("API_ROOT", "dummy://")
 
 
+@app.route("/", methods=["GET"])
+def home():
+    return json.dumps({"links": [{"rel": "companies", "href": get_api_root() + "/companies"},
+                                 {"rel": "contents", "href": get_api_root() + "/contents"}]}, cls=SetEncoder), 200, {
+               'Content-Type': 'application/json'}
+
+
+@app.route("/companies", methods=["GET"])
+def get_companies():
+    companies = db.session.query(Company).all()
+    return json.dumps(
+        [{"company_id": company.id,
+          "links": get_company_links(company.id)
+          } for company in companies]
+
+        , cls=SetEncoder), 200, {
+               'Content-Type': 'application/json'}
+
+
+@app.route("/contents", methods=["GET"])
+def get_contents():
+    contents = db.session.query(Content).all()
+    return json.dumps(
+        [{"content_id": content.id,
+          "links": get_content_links(content.id)
+          } for content in contents]
+
+        , cls=SetEncoder), 200, {
+               'Content-Type': 'application/json'}
+
+
 @app.route("/content/<tt_code>", methods=["POST"])
 def post_content(tt_code):
     content = db.session.query(Content).filter(Content.id == tt_code).first()
@@ -51,9 +82,20 @@ def get_content(tt_code):
     content = db.session.query(Content).filter(Content.id == tt_code).first()
     if content is None:
         return abort(404)
-    res = {"imdb_id": tt_code,
-           "companies": [{"imdb_id": company.id, "links": get_company_links(company.id)} for company in
-                         content.companies]}
+    res = {"content_id": tt_code,
+           "company_ids": [{"imdb_id": company.id} for company in content.companies],
+           "links": [{"rel": "companies", "href": get_api_root() + f"/content/{tt_code}/companies"}]}
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
+@app.route("/content/<tt_code>/companies", methods=["GET"])
+def get_companies_for_content(tt_code):
+    content = db.session.query(Content).filter(Content.id == tt_code).first()
+    if content is None:
+        return abort(404)
+    res = [
+        {"company_id": company.id, "link": [get_company_links(company.id)]} for company in content.companies
+    ]
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
@@ -86,8 +128,8 @@ def get_company(cc_code):
     if company is None:
         return abort(409)
 
-    res = {company.id: {"name": company.name, "link": company.link,
+    res = {"company_id": company.id, "name": company.name, "link": company.link,
            "contents": [{"imdb_id": content.id, "links": get_content_links(content.id)} for content in
-                        company.contents]}}
+                        company.contents]}
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}

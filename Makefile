@@ -1,4 +1,4 @@
-IMAGE_NAME="stream4good/imdb_company_mapper"
+IMAGE_NAME="stream4good/imdb-company-mapper"
 VERSION=$(shell git describe --tags)
 VERSION_MAJOR=$(shell git describe --tags|sed -rn 's/([0-9]+)\..*/\1/p')
 VERSION_MAJOR_MINOR=$(shell git describe --tags|sed -rn 's/([0-9]+\.[0-9]+)\..*/\1/p')
