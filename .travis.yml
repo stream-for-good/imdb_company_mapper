@@ -1,0 +1,14 @@
+
+language: python
+
+services:
+  - docker
+  
+script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - make docker-build-testing
+  - make docker-push-testing
+  - make docker-build-release
+  - make docker-push-release
+
+
